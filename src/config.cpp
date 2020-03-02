@@ -17,6 +17,7 @@
 #include <fstream>
 #include <utility>
 
+#include <common/license/types.h>
 #include <common/value.h>
 
 #define SERVICE_LOG_PATH_FIELD "log_path"
@@ -28,6 +29,7 @@
 #define SERVICE_EPG_URL_FIELD "epg_url"
 #define SERVICE_CATCHUP_HOST_FIELD "catchups_host"
 #define SERVICE_CATCHUP_HTTP_ROOT_FIELD "catchups_http_root"
+#define SERVICE_LICENSE_KEY_FIELD "license_key"
 
 #define DUMMY_LOG_FILE_PATH "/dev/null"
 
@@ -79,6 +81,8 @@ common::ErrnoError ReadConfigFile(const std::string& path, common::HashValue** a
       options->Insert(pair.first, common::Value::CreateStringValueFromBasicString(pair.second));
     } else if (pair.first == SERVICE_CATCHUP_HTTP_ROOT_FIELD) {
       options->Insert(pair.first, common::Value::CreateStringValueFromBasicString(pair.second));
+    } else if (pair.first == SERVICE_LICENSE_KEY_FIELD) {
+      options->Insert(pair.first, common::Value::CreateStringValueFromBasicString(pair.second));
     }
   }
 
@@ -98,7 +102,8 @@ Config::Config()
       mongodb_url(MONGODB_URL),
       epg_url(EPG_URL),
       catchup_host(GetCatchupDefaultHost()),
-      catchups_http_root(CATCHUPS_HTTP_ROOT) {}
+      catchups_http_root(CATCHUPS_HTTP_ROOT),
+      license_key() {}
 
 common::net::HostAndPort Config::GetDefaultHost() {
   common::net::HostAndPort result;
@@ -116,6 +121,10 @@ common::net::HostAndPort Config::GetCatchupDefaultHost() {
   return result;
 }
 
+bool Config::IsValid() const {
+  return common::license::is_valid_license_key(license_key);
+}
+
 common::ErrnoError load_config_from_file(const std::string& config_absolute_path, Config* config) {
   if (!config) {
     return common::make_errno_error_inval();
@@ -126,6 +135,15 @@ common::ErrnoError load_config_from_file(const std::string& config_absolute_path
   common::ErrnoError err = ReadConfigFile(config_absolute_path, &slave_config_args);
   if (err) {
     return err;
+  }
+
+  common::Value* license_field = slave_config_args->Find(SERVICE_LICENSE_KEY_FIELD);
+  if (!license_field || !license_field->GetAsBasicString(&lconfig.license_key)) {
+    return common::make_errno_error(SERVICE_LICENSE_KEY_FIELD " field in config required", EINTR);
+  }
+
+  if (!common::license::is_valid_license_key(lconfig.license_key)) {
+    return common::make_errno_error("Invalid license key", EINTR);
   }
 
   common::Value* log_path_field = slave_config_args->Find(SERVICE_LOG_PATH_FIELD);

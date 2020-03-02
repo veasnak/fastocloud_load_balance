@@ -19,7 +19,7 @@
 
 #include <common/daemon/commands/activate_info.h>
 #include <common/daemon/commands/stop_info.h>
-#include <common/license/gen_hardware_hash.h>
+#include <common/license/check_expire_license.h>
 #include <common/net/net.h>
 
 #include "daemon/client.h"
@@ -37,9 +37,8 @@
 namespace fastocloud {
 namespace server {
 
-ProcessSlaveWrapper::ProcessSlaveWrapper(const std::string& license_key, const Config& config)
+ProcessSlaveWrapper::ProcessSlaveWrapper(const Config& config)
     : config_(config),
-      license_key_(license_key),
       loop_(nullptr),
       subscribers_server_(nullptr),
       subscribers_handler_(nullptr),
@@ -63,8 +62,8 @@ ProcessSlaveWrapper::ProcessSlaveWrapper(const std::string& license_key, const C
   http_server_->SetName("http_server");
 }
 
-int ProcessSlaveWrapper::SendStopDaemonRequest(const std::string& license) {
-  if (license.empty()) {
+int ProcessSlaveWrapper::SendStopDaemonRequest(const Config& config) {
+  if (!config.IsValid()) {
     return EXIT_FAILURE;
   }
 
@@ -76,7 +75,7 @@ int ProcessSlaveWrapper::SendStopDaemonRequest(const std::string& license) {
   }
 
   std::unique_ptr<ProtocoledDaemonClient> connection(new ProtocoledDaemonClient(nullptr, client_info));
-  err = connection->StopMe(license);
+  err = connection->StopMe(config.license_key);
   ignore_result(connection->Close());
   if (err) {
     return EXIT_FAILURE;
@@ -300,7 +299,7 @@ common::ErrnoError ProcessSlaveWrapper::HandleRequestClientStopService(Protocole
       return common::make_errno_error(err_str, EAGAIN);
     }
 
-    bool is_verified_request = stop_info.GetLicense() == license_key_ || dclient->IsVerified();
+    bool is_verified_request = stop_info.GetLicense() == config_.license_key || dclient->IsVerified();
     if (!is_verified_request) {
       return common::make_errno_error_inval();
     }
@@ -335,7 +334,7 @@ common::ErrnoError ProcessSlaveWrapper::HandleRequestClientActivate(ProtocoledDa
 
     const std::string expire_key = activate_info.GetLicense();
     common::license::license_key_t lc;
-    if (!common::license::string2licensekey(license_key_, lc)) {
+    if (!common::license::string2licensekey(config_.license_key, lc)) {
       common::Error err = common::make_error("Invalid license key");
       ignore_result(dclient->ActivateFail(req->id, err));
       return common::make_errno_error(err->GetDescription(), EINVAL);

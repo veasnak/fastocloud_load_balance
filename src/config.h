@@ -30,6 +30,8 @@ struct Config {
   static common::net::HostAndPort GetDefaultHost();
   static common::net::HostAndPort GetCatchupDefaultHost();
 
+  bool IsValid() const;
+
   common::net::HostAndPort host;
   common::net::HostAndPort subscribers_host;
   std::string log_path;
@@ -39,6 +41,7 @@ struct Config {
   common::uri::Url epg_url;
   common::net::HostAndPort catchup_host;
   common::file_system::ascii_directory_string_path catchups_http_root;
+  std::string license_key;
 };
 
 common::ErrnoError load_config_from_file(const std::string& config_absolute_path, Config* config) WARN_UNUSED_RESULT;

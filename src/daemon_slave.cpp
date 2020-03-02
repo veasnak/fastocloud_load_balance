@@ -59,34 +59,6 @@ struct SigIgnInit {
 #endif
 
 const size_t kMaxSizeLogFile = 10 * 1024 * 1024;  // 10 MB
-
-bool create_license_key(std::string* license_key) {
-#if LICENSE_ALGO == 0
-  static const common::license::ALGO_TYPE license_algo = common::license::HDD;
-#elif LICENSE_ALGO == 1
-  static const common::license::ALGO_TYPE license_algo = common::license::MACHINE_ID;
-#else
-#error Unknown license algo used
-#endif
-
-  if (!license_key) {
-    return false;
-  }
-
-  common::license::license_key_t llicense_key;
-  if (!common::license::GenerateHardwareHash(license_algo, llicense_key)) {
-    ERROR_LOG() << "Failed to generate hash!";
-    return false;
-  }
-
-  if (strncmp(llicense_key, LICENSE_KEY, LICENSE_KEY_LENGHT) != 0) {
-    ERROR_LOG() << "License keys not same!";
-    return false;
-  }
-
-  *license_key = std::string(llicense_key, LICENSE_KEY_LENGHT);
-  return true;
-}
 }  // namespace
 
 int main(int argc, char** argv, char** envp) {
@@ -98,13 +70,15 @@ int main(int argc, char** argv, char** envp) {
     } else if (strcmp(argv[i], "--daemon") == 0) {
       run_as_daemon = true;
     } else if (strcmp(argv[i], "--stop") == 0) {
-      std::string license_key;
-      if (!create_license_key(&license_key)) {
-        std::cerr << "Can't generate license.";
+      fastocloud::server::Config config;
+      common::ErrnoError err = fastocloud::server::load_config_from_file(CONFIG_PATH, &config);
+      if (err) {
+        std::cerr << "Can't read config, file path: " << CONFIG_PATH << ", error: " << err->GetDescription()
+                  << std::endl;
         return EXIT_FAILURE;
       }
 
-      return fastocloud::server::ProcessSlaveWrapper::SendStopDaemonRequest(license_key);
+      return fastocloud::server::ProcessSlaveWrapper::SendStopDaemonRequest(config);
     } else if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
       std::cout << HELP_TEXT << std::endl;
       return EXIT_SUCCESS;
@@ -117,7 +91,8 @@ int main(int argc, char** argv, char** envp) {
   fastocloud::server::Config config;
   common::ErrnoError err = fastocloud::server::load_config_from_file(CONFIG_PATH, &config);
   if (err) {
-    std::cerr << "Can't read config file path: " << CONFIG_PATH << std::endl;
+    std::cerr << "Can't read config, file path: " << CONFIG_PATH << ", error: " << err->GetDescription() << std::endl;
+    return EXIT_FAILURE;
   }
 
   if (run_as_daemon) {
@@ -172,13 +147,8 @@ int main(int argc, char** argv, char** envp) {
     return EXIT_FAILURE;
   }
 
-  std::string license_key;
-  if (!create_license_key(&license_key)) {
-    return EXIT_FAILURE;
-  }
-
   // start
-  fastocloud::server::ProcessSlaveWrapper wrapper(license_key, config);
+  fastocloud::server::ProcessSlaveWrapper wrapper(config);
   NOTICE_LOG() << "Running " PROJECT_VERSION_HUMAN << " in " << (run_as_daemon ? "daemon" : "common") << " mode";
 
   for (char** env = envp; *env != nullptr; env++) {

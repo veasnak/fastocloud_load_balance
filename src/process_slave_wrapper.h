@@ -39,10 +39,10 @@ class ProcessSlaveWrapper : public common::libev::IoLoopObserver, public subscri
   enum { ping_timeout_clients_seconds = 60 };
   typedef fastotv::protocol::protocol_client_t stream_client_t;
 
-  explicit ProcessSlaveWrapper(const std::string& licensy_key, const Config& config);
+  explicit ProcessSlaveWrapper(const Config& config);
   ~ProcessSlaveWrapper() override;
 
-  static int SendStopDaemonRequest(const std::string& license);
+  static int SendStopDaemonRequest(const Config& config);
   common::net::HostAndPort GetServerHostAndPort();
 
   int Exec() WARN_UNUSED_RESULT;
@@ -90,7 +90,6 @@ class ProcessSlaveWrapper : public common::libev::IoLoopObserver, public subscri
                                                          const fastotv::protocol::response_t* resp) WARN_UNUSED_RESULT;
 
   const Config config_;
-  const std::string license_key_;
 
   common::libev::IoLoop* loop_;
   // subscribers
