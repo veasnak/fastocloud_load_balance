@@ -122,7 +122,7 @@ common::net::HostAndPort Config::GetCatchupDefaultHost() {
 }
 
 bool Config::IsValid() const {
-  return common::license::is_valid_license_key(license_key);
+  return license_key ? true : false;
 }
 
 common::ErrnoError load_config_from_file(const std::string& config_absolute_path, Config* config) {
@@ -138,13 +138,16 @@ common::ErrnoError load_config_from_file(const std::string& config_absolute_path
   }
 
   common::Value* license_field = slave_config_args->Find(SERVICE_LICENSE_KEY_FIELD);
-  if (!license_field || !license_field->GetAsBasicString(&lconfig.license_key)) {
+  std::string license_str;
+  if (!license_field || !license_field->GetAsBasicString(&license_str)) {
     return common::make_errno_error(SERVICE_LICENSE_KEY_FIELD " field in config required", EINTR);
   }
 
-  if (!common::license::is_valid_license_key(lconfig.license_key)) {
+  const auto license = common::license::make_license<Config::license_t::value_type>(license_str);
+  if (!license) {
     return common::make_errno_error("Invalid license key", EINTR);
   }
+  lconfig.license_key = license;
 
   common::Value* log_path_field = slave_config_args->Find(SERVICE_LOG_PATH_FIELD);
   if (!log_path_field || !log_path_field->GetAsBasicString(&lconfig.log_path)) {

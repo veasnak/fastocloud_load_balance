@@ -17,6 +17,7 @@
 #include <string>
 
 #include <common/daemon/client.h>  // for TcpClient
+#include <common/license/types.h>
 
 #include <fastotv/protocol/protocol.h>
 #include <fastotv/protocol/types.h>
@@ -31,7 +32,7 @@ class ProtocoledDaemonClient : public fastotv::protocol::ProtocolClient<common::
   typedef fastotv::protocol::ProtocolClient<common::daemon::DaemonClient> base_class;
   ProtocoledDaemonClient(common::libev::IoLoop* server, const common::net::socket_info& info);
 
-  common::ErrnoError StopMe(const std::string& license) WARN_UNUSED_RESULT;
+  common::ErrnoError StopMe(const common::license::license_key_t& license) WARN_UNUSED_RESULT;
   common::ErrnoError StopFail(fastotv::protocol::sequance_id_t id, common::Error err) WARN_UNUSED_RESULT;
   common::ErrnoError StopSuccess(fastotv::protocol::sequance_id_t id) WARN_UNUSED_RESULT;
 

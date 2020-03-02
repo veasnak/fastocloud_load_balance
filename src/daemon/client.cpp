@@ -24,7 +24,7 @@ namespace server {
 ProtocoledDaemonClient::ProtocoledDaemonClient(common::libev::IoLoop* server, const common::net::socket_info& info)
     : base_class(server, info) {}
 
-common::ErrnoError ProtocoledDaemonClient::StopMe(const std::string& license) {
+common::ErrnoError ProtocoledDaemonClient::StopMe(const common::license::license_key_t& license) {
   const common::daemon::commands::StopInfo stop_req(license);
   fastotv::protocol::request_t req;
   common::Error err_ser = StopServiceRequest(NextRequestID(), stop_req, &req);

@@ -75,7 +75,7 @@ int ProcessSlaveWrapper::SendStopDaemonRequest(const Config& config) {
   }
 
   std::unique_ptr<ProtocoledDaemonClient> connection(new ProtocoledDaemonClient(nullptr, client_info));
-  err = connection->StopMe(config.license_key);
+  err = connection->StopMe(*config.license_key);
   ignore_result(connection->Close());
   if (err) {
     return EXIT_FAILURE;
@@ -332,23 +332,10 @@ common::ErrnoError ProcessSlaveWrapper::HandleRequestClientActivate(ProtocoledDa
       return common::make_errno_error(err_des->GetDescription(), EAGAIN);
     }
 
-    const std::string expire_key = activate_info.GetLicense();
-    common::license::license_key_t lc;
-    if (!common::license::string2licensekey(config_.license_key, lc)) {
-      common::Error err = common::make_error("Invalid license key");
-      ignore_result(dclient->ActivateFail(req->id, err));
-      return common::make_errno_error(err->GetDescription(), EINVAL);
-    }
-
-    common::license::expire_key_t exp;
-    if (!common::license::string2expirekey(expire_key, exp)) {
-      common::Error err = common::make_error("Invalid expire license key");
-      ignore_result(dclient->ActivateFail(req->id, err));
-      return common::make_errno_error(err->GetDescription(), EINVAL);
-    }
-
+    const auto expire_key = activate_info.GetLicense();
     common::time64_t tm;
-    common::Error err_exp = common::license::GetExpireTimeFromKey(PROJECT_NAME_LOWERCASE, lc, exp, &tm);
+    common::Error err_exp =
+        common::license::GetExpireTimeFromKey(PROJECT_NAME_LOWERCASE, *config_.license_key, *expire_key, &tm);
     if (err_exp) {
       ignore_result(dclient->ActivateFail(req->id, err_exp));
       return common::make_errno_error(err_exp->GetDescription(), EINVAL);

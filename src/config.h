@@ -18,6 +18,7 @@
 
 #include <common/error.h>
 #include <common/file_system/path.h>
+#include <common/license/types.h>
 #include <common/net/types.h>
 #include <common/uri/url.h>
 
@@ -25,6 +26,8 @@ namespace fastocloud {
 namespace server {
 
 struct Config {
+  typedef common::Optional<common::license::license_key_t> license_t;
+
   Config();
 
   static common::net::HostAndPort GetDefaultHost();
@@ -41,7 +44,7 @@ struct Config {
   common::uri::Url epg_url;
   common::net::HostAndPort catchup_host;
   common::file_system::ascii_directory_string_path catchups_http_root;
-  std::string license_key;
+  license_t license_key;
 };
 
 common::ErrnoError load_config_from_file(const std::string& config_absolute_path, Config* config) WARN_UNUSED_RESULT;
