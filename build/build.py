@@ -15,9 +15,7 @@ class BuildRequest(build_utils.BuildRequest):
 def print_usage():
     print("Usage:\n"
           "[required] argv[1] build type(release/debug)\n"
-          "[required] argv[2] license key\n"
-          "[optional] argv[3] license algo\n"
-          "[optional] argv[4] prefix\n")
+          "[optional] argv[2] prefix\n")
 
 
 if __name__ == "__main__":
@@ -29,19 +27,9 @@ if __name__ == "__main__":
         print_usage()
         sys.exit(1)
 
-    if argc > 2:
-        license_key = sys.argv[2]
-    else:
-        print_usage()
-        sys.exit(1)
-
-    license_algo = 0
-    if argc > 3:
-        license_algo = sys.argv[3]
-
     prefix = '/usr/local'
-    if argc > 4:
-        prefix = sys.argv[4]
+    if argc > 2:
+        prefix = sys.argv[2]
 
     host_os = system_info.get_os()
     arch_host_os = system_info.get_arch_name()
