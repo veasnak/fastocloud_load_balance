@@ -7,8 +7,8 @@ class BuildRequest(build_utils.BuildRequest):
     def __init__(self, platform, arch_name, dir_path, prefix_path):
         build_utils.BuildRequest.__init__(self, platform, arch_name, dir_path, prefix_path)
 
-    def build(self, license_key, license_algo, build_type):
-        cmake_flags = ['-DLICENSE_KEY=%s' % license_key, '-DLICENSE_ALGO=%s' % license_algo]
+    def build(self, build_type):
+        cmake_flags = []
         self._build_via_cmake_double(cmake_flags, build_type)
 
 
@@ -35,4 +35,4 @@ if __name__ == "__main__":
     arch_host_os = system_info.get_arch_name()
 
     request = BuildRequest(host_os, arch_host_os, 'build_' + host_os, prefix)
-    request.build(license_key, license_algo, build_type)
+    request.build(build_type)
